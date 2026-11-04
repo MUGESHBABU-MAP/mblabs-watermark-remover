@@ -707,7 +707,7 @@ async function runExport(signal) {
             ...debugAlphaOptions,
             sampleCount: Number(els.sampleCount.value) || DEFAULT_SAMPLE_COUNT,
             detection: detectionPayload,
-            allowLowConfidence: els.allowLowConfidence.checked,
+            allowLowConfidence: state.allowLowConfidence || els.allowLowConfidence.checked,
             allenkFdncnnRuntime,
             allenkFdncnnSigma,
             allenkFdncnnPadding,
