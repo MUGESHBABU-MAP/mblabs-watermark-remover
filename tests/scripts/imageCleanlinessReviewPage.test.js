@@ -3,7 +3,7 @@ import test from 'node:test';
 import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { createServer } from 'node:http';
 import { chromium } from 'playwright';
 
 import { createImageCleanlinessReviewPage } from '../../scripts/create-image-cleanliness-review-page.js';
@@ -50,10 +50,45 @@ test('offline review page persists blind decisions and exports a frozen complete
     assert.equal(html.includes('secret-1.png'), false);
     assert.equal(html.includes('metricValues'), false);
 
+    const contentTypes = {
+        '.html': 'text/html; charset=utf-8',
+        '.png': 'image/png',
+        '.json': 'application/json'
+    };
+    const server = createServer(async (request, response) => {
+        const pathname = decodeURIComponent(new URL(request.url ?? '/', 'http://localhost').pathname);
+        const relativePath = pathname === '/'
+            ? path.basename(outputPath)
+            : pathname.replace(/^\/+/, '');
+        const filePath = path.join(workspace, relativePath);
+
+        if (!filePath.startsWith(`${workspace}${path.sep}`) && filePath !== outputPath) {
+            response.writeHead(403);
+            response.end('Forbidden');
+            return;
+        }
+
+        try {
+            const body = await readFile(filePath);
+            response.writeHead(200, {
+                'Content-Type': contentTypes[path.extname(filePath).toLowerCase()] ?? 'application/octet-stream',
+                'Cache-Control': 'no-store'
+            });
+            response.end(body);
+        } catch {
+            response.writeHead(404);
+            response.end('Not found');
+        }
+    });
+    t.after(() => new Promise((resolve) => server.close(resolve)));
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const serverAddress = server.address();
+    assert(serverAddress && typeof serverAddress === 'object');
+
     const browser = await chromium.launch({ headless: true });
     t.after(() => browser.close());
     const page = await browser.newPage({ acceptDownloads: true });
-    await page.goto(pathToFileURL(outputPath).href);
+    await page.goto(`http://127.0.0.1:${serverAddress.port}/`);
 
     await assertPageText(page, '[data-testid="progress"]', '0 / 2');
     await assertPageText(page, '[data-testid="current-id"]', 'B001');
