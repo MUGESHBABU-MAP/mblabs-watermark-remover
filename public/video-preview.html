@@ -81,6 +81,13 @@
               </div>
               <div class="progress" aria-label="Processing progress" style="margin:14px 0"><span id="progressBar"></span></div>
               <div id="status" class="status" data-tone="info" role="status"></div>
+              <div id="lowConfidenceCard" class="low-confidence-card" hidden role="status">
+                <div>
+                  <strong>Confidence is low</strong>
+                  <p>The export may retain visible watermark artifacts or damage small details. Nothing is uploaded, but you should review the result before using it.</p>
+                </div>
+                <button id="exportAnywayBtn" class="btn btn-warning" type="button">Export with best effort</button>
+              </div>
               <div class="action-grid" style="margin-top:14px">
                 <button id="detectBtn" class="btn btn-secondary" type="button">Detect watermark</button>
                 <button id="resetBtn" class="btn btn-secondary" type="button">Reset</button>

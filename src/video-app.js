@@ -55,7 +55,8 @@ const state = {
     running: false,
     controller: null,
     jobId: 0,
-    syncingPlayback: false
+    syncingPlayback: false,
+    allowLowConfidence: false
 };
 
 const allenkFdncnnRuntimePromises = new Map();
@@ -96,6 +97,8 @@ const els = {
     downloadBtn: $('downloadBtn'),
     resetBtn: $('resetBtn'),
     cancelBtn: $('cancelBtn'),
+    lowConfidenceCard: $('lowConfidenceCard'),
+    exportAnywayBtn: $('exportAnywayBtn'),
     relocatedReviewPresetBtn: $('relocatedReviewPresetBtn')
 };
 
@@ -321,6 +324,15 @@ function formatPlaybackTime(value) {
     return `${minutes}:${String(seconds).padStart(2, '0')}`;
 }
 
+function showLowConfidenceCard(visible) {
+    els.lowConfidenceCard.hidden = !visible;
+    els.exportAnywayBtn.disabled = state.running || batch.processing;
+}
+
+function updateLowConfidenceCard(detection = state.detection) {
+    showLowConfidenceCard(Boolean(detection && !detection.isConfident && !state.allowLowConfidence));
+}
+
 function updateButtons() {
     const hasFile = Boolean(state.file);
     els.detectBtn.disabled = !hasFile || state.running || batch.processing;
@@ -331,6 +343,9 @@ function updateButtons() {
     els.resetBtn.disabled = state.running || batch.processing;
     els.cancelBtn.disabled = !state.controller || state.controller.signal.aborted;
     els.fileInput.disabled = Boolean(state.controller?.signal.aborted) || (state.running && !batch.processing);
+    if (els.lowConfidenceCard) {
+        els.exportAnywayBtn.disabled = state.running || batch.processing;
+    }
     updatePlaybackControls();
 }
 
@@ -505,6 +520,8 @@ async function setFile(file) {
     state.detection = null;
     state.processedUrl = null;
     state.jobId++;
+    state.allowLowConfidence = false;
+    showLowConfidenceCard(false);
 
     state.originalUrl = URL.createObjectURL(file);
     els.originalVideo.src = state.originalUrl;
@@ -599,6 +616,7 @@ async function runDetection() {
         renderDetection(result.detection);
         setProgress(1, result.detection.isConfident ? 'Detection complete' : 'Low confidence');
         const preset = applyAutomaticPreset(result.detection, result.metadata, { silent: true });
+        updateLowConfidenceCard(result.detection);
         if (preset.id === 'relocated-review') {
             setStatus('Detection complete; AI watermark removal will be used for export.', result.detection.isConfident ? 'success' : 'warn');
         } else {
@@ -653,6 +671,14 @@ async function runExport(signal) {
         } else {
             applyAutomaticPreset(detectionPayload.detection, detectionPayload.metadata, { silent: true });
         }
+        const exportDetection = detectionPayload?.detection;
+        if (!exportDetection?.isConfident && !state.allowLowConfidence) {
+            exportDetection && updateLowConfidenceCard(exportDetection);
+            setProgress(0, 'Low confidence');
+            setStatus('Detection confidence is low. Choose “Export with best effort” to proceed.', 'warn');
+            return;
+        }
+        els.lowConfidenceCard.hidden = true;
         applyDebugControlOverrides();
         const denoiseBackend = els.denoiseBackend.value || DEFAULT_DENOISE_BACKEND;
         const allenkFdncnnRuntimeProfile = resolveAllenkFdncnnRuntimeProfile(detectionPayload?.detection?.position);
@@ -874,6 +900,8 @@ function handleIncomingFiles(fileList) {
 
 function reset() {
     state.jobId++;
+    state.allowLowConfidence = false;
+    showLowConfidenceCard(false);
     startBatchSelection(batch);
     renderBatchQueue();
     cleanupUrls();
@@ -948,6 +976,9 @@ function applyPresetToControls(preset) {
 function applyAutomaticPreset(detection = state.detection, metadata = state.metadata, { silent = false } = {}) {
     const preset = getAutomaticVideoPresetConfig(detection, metadata);
     applyPresetToControls(preset);
+    if (preset?.allowLowConfidence === true) {
+        state.allowLowConfidence = true;
+    }
     if (!silent) {
         setStatus(`Automatically selected: ${preset.label}.`, preset.allowLowConfidence ? 'warn' : 'success');
     }
@@ -1033,6 +1064,13 @@ function setupEvents() {
     els.denoiseBackend.addEventListener('change', () => {
         if (els.denoiseBackend.value !== VIDEO_DENOISE_BACKENDS.ALLENK_FDNCNN_BROWSER_SPIKE) return;
         setNumberControl(els.edgeDenoiseStrength, 1.8);
+    });
+    els.exportAnywayBtn.addEventListener('click', () => {
+        state.allowLowConfidence = true;
+        els.allowLowConfidence.checked = true;
+        showLowConfidenceCard(false);
+        setStatus('Best-effort export accepted. Exporting anyway...', 'warn');
+        runExport();
     });
     els.detectBtn.addEventListener('click', runDetection);
     els.processBtn.addEventListener('click', () => runExport());
