@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#2563eb" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>MBLabs Watermark Remover — Video Workspace</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232563eb'/%3E%3Cpath d='M8 20L13 10L16 17L20 6L24 20' stroke='white' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="mblabs.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav">
+      <a class="brand" href="index.html" aria-label="MBLabs Watermark Remover home">
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 17L8.5 7L12 14L15.5 4L20 17"/></svg></span>
+        <span class="brand-name">MBLabs <span>Watermark Remover</span></span>
+      </a>
+      <nav class="nav-links" aria-label="Local tools">
+        <a href="index.html">Overview</a>
+        <a href="dev-preview.html">Image tool</a>
+        <a href="video-preview.html" aria-current="page">Video tool</a>
+      </nav>
+      <div class="nav-actions"><a class="btn btn-primary btn-small" href="dev-preview.html">Image tool<span aria-hidden="true">→</span></a></div>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <div class="container">
+      <div class="tool-hero">
+        <div>
+          <div class="eyebrow"><span class="eyebrow-dot"></span> MBLabs Video Workspace</div>
+          <h1>Remove supported video watermarks, frame by frame.</h1>
+          <p>Decode, detect, process, and repackage supported Gemini/Veo videos entirely in your browser. Compatible audio tracks can pass through unchanged.</p>
+        </div>
+        <div class="tool-badges" aria-label="Video capabilities">
+          <span class="badge"><span class="badge-dot"></span>Browser-only</span>
+          <span class="badge">WebCodecs + local models</span>
+          <span class="badge">No upload</span>
+        </div>
+      </div>
+
+      <div class="tool-grid">
+        <section class="panel" aria-label="Before and after video comparison">
+          <div class="panel-head"><span>Before / after comparison</span><span id="progressText" class="small muted">Waiting for video</span></div>
+          <div id="comparePlayer" class="video-frame">
+            <div class="video-pane">
+              <video id="originalVideo" playsinline preload="metadata"></video>
+              <span class="pane-tag">Before</span>
+              <div id="originalEmpty" class="empty-state"><div><strong>Choose or drop a video</strong><span>MP4, WebM, MOV · Gemini/Veo visible marks</span></div></div>
+            </div>
+            <div class="video-pane">
+              <video id="processedVideo" playsinline preload="metadata" muted></video>
+              <span id="afterBadge" class="pane-tag" hidden>After</span>
+              <div id="processedEmpty" class="empty-state"><div><strong>Output appears here</strong><span>Export completes locally in this browser</span></div></div>
+            </div>
+          </div>
+          <div class="video-controls">
+            <button id="playPauseBtn" class="play-toggle" type="button" data-playing="false" aria-label="Play" disabled></button>
+            <input id="scrubber" class="range" type="range" min="0" max="1000" value="0" aria-label="Playback progress" disabled>
+            <span id="timeLabel" class="time-label">0:00</span>
+          </div>
+        </section>
+
+        <aside class="sidebar" aria-label="Video processing controls">
+          <div id="dropzone" class="upload-box" data-dragging="false" role="button" tabindex="0" aria-label="Choose or drop a video">
+            <div class="upload-icon" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg></div>
+            <strong>Choose or drop a video</strong>
+            <p>MP4, WebM, or MOV. Processing stays on this device.</p>
+            <input id="fileInput" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime,video/*" multiple hidden />
+          </div>
+
+          <div id="batchQueue" class="batch-list" aria-label="Batch queue" hidden></div>
+
+          <section class="panel" aria-label="Automatic processing">
+            <div class="panel-head"><span>Automatic cleanup</span><span class="small muted">Recommended</span></div>
+            <div class="panel-body">
+              <div id="autoPresetSummary" class="auto-summary">
+                <div class="auto-orb" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.2 6.4L20.6 10l-6.4 2.2L12 18.6 9.8 12.2 3.4 10l6.4-1.6L12 2z"/></svg></div>
+                <div><strong>AI automatic processing</strong><span>After you choose a video, it is scanned automatically; the local AI model is used to clean it during export.</span></div>
+              </div>
+              <div class="progress" aria-label="Processing progress" style="margin:14px 0"><span id="progressBar"></span></div>
+              <div id="status" class="status" data-tone="info" role="status"></div>
+              <div class="action-grid" style="margin-top:14px">
+                <button id="detectBtn" class="btn btn-secondary" type="button">Detect watermark</button>
+                <button id="resetBtn" class="btn btn-secondary" type="button">Reset</button>
+                <button id="cancelBtn" class="btn btn-secondary" type="button" disabled>Stop processing</button>
+                <button id="processBtn" class="btn btn-primary primary" type="button">Export watermark-free video<span aria-hidden="true">→</span></button>
+                <a id="downloadBtn" class="download-link" aria-disabled="true">Download result</a>
+              </div>
+              <div class="internal-controls" hidden aria-hidden="true">
+                <span id="alphaGainValue">1.00</span>
+                <input id="alphaGain" type="range" min="0.25" max="1.35" step="0.05">
+                <input id="adaptiveAlpha" type="checkbox">
+                <input id="highQualityCleanup" type="checkbox">
+                <select id="denoiseBackend">
+                  <option value="none">Off</option>
+                  <option value="canvas-edge-denoise">Canvas edge denoise</option>
+                  <option value="canvas-edge-band-denoise">Canvas edge band denoise</option>
+                  <option value="canvas-edge-core-denoise">Canvas edge core denoise</option>
+                  <option value="canvas-footprint-polish">Canvas footprint polish</option>
+                  <option value="canvas-temporal-delta-stabilize">Canvas temporal delta stabilize</option>
+                  <option value="canvas-temporal-match-delta-stabilize">Canvas matched delta stabilize</option>
+                  <option value="canvas-temporal-stabilize">Canvas temporal stabilize</option>
+                  <option value="canvas-texture-repair">Canvas texture repair</option>
+                  <option value="allenk-fdncnn-browser-spike">AI FDnCNN ONNX</option>
+                </select>
+                <button id="relocatedReviewPresetBtn" type="button">Relocated anchor review preset</button>
+                <span id="edgeDenoiseStrengthValue">0.25</span>
+                <input id="edgeDenoiseStrength" type="range" min="0" max="1" step="0.05">
+                <span id="residualCleanupValue">1.50</span>
+                <input id="residualCleanup" type="range" min="0" max="1.80" step="0.05">
+                <input id="sampleCount" type="number" min="4" max="24" step="1">
+                <input id="videoBitrateMbps" type="number" min="1" max="80" step="0.5">
+                <input id="allowLowConfidence" type="checkbox">
+              </div>
+            </div>
+          </section>
+
+          <section class="panel" aria-label="Video information">
+            <div class="panel-head"><span>Video information</span><span class="small muted">Metadata</span></div>
+            <div id="metadata" class="panel-body meta-list"><p class="muted">Waiting to load video</p></div>
+          </section>
+
+          <section class="panel" aria-label="Detection results">
+            <div class="panel-head"><span>Detection results</span><span class="small muted">Evidence</span></div>
+            <div id="detection" class="panel-body meta-list"><p class="muted">Detect first, or export directly</p></div>
+          </section>
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid"><div><div class="footer-brand">MBLabs Watermark Remover</div><p class="small" style="margin:8px 0 0;color:#94a3b8">Local AI watermark cleanup for supported videos.</p></div><nav class="footer-links" aria-label="Local tools"><a href="index.html">Overview</a><a href="dev-preview.html">Image tool</a><a href="userscript/gemini-watermark-remover.user.js">Userscript</a></nav></div>
+      <div class="footer-bottom"><span>MBLabs Watermark Remover</span><span>Processed entirely on this device.</span></div>
+    </div>
+  </footer>
+
+  <script src="video-app.js"></script>
+</body>
+</html>

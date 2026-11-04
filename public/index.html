@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="MBLabs Watermark Remover — a private, local-first tool for removing supported Gemini watermarks from AI-generated images and videos." />
+  <meta name="theme-color" content="#2563eb" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>MBLabs Watermark Remover — Local AI Watermark Cleanup</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232563eb'/%3E%3Cpath d='M8 20L13 10L16 17L20 6L24 20' stroke='white' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="mblabs.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav">
+      <a class="brand" href="index.html" aria-label="MBLabs Watermark Remover home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M4 17L8.5 7L12 14L15.5 4L20 17"/></svg>
+        </span>
+        <span class="brand-name">MBLabs <span>Watermark Remover</span></span>
+      </a>
+      <nav class="nav-links" aria-label="Primary navigation">
+        <a href="#features">Features</a>
+        <a href="dev-preview.html">Image tool</a>
+        <a href="video-preview.html">Video tool</a>
+      </nav>
+      <div class="nav-actions">
+        <a class="btn btn-primary btn-small" href="video-preview.html">Open video tool <span aria-hidden="true">→</span></a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <div class="eyebrow"><span class="eyebrow-dot"></span> Private · local · Gemini/Veo focused</div>
+          <h1>Clean AI watermarks without giving your media away.</h1>
+          <p class="lead">MBLabs Watermark Remover restores supported Gemini-generated images and videos with precise, local cleanup — no hosted upload, no black-box inpainting, no surprise edits.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="video-preview.html">Remove from video<span aria-hidden="true">→</span></a>
+            <a class="btn btn-secondary" href="dev-preview.html">Open image studio</a>
+          </div>
+          <div class="hero-note" aria-label="Key benefits">
+            <span><span class="check">✓</span> Runs locally</span>
+            <span><span class="check">✓</span> Supported visible marks only</span>
+            <span><span class="check">✓</span> Original context preserved</span>
+          </div>
+        </div>
+
+        <div class="preview-card" aria-label="Illustrated before and after watermark removal">
+          <div class="preview-head">
+            <div class="preview-title"><span class="live-dot"></span>Live processing preview</div>
+            <span class="success-pill"><span aria-hidden="true">●</span>Ready</span>
+          </div>
+          <div class="watermark-preview">
+            <div class="preview-float">
+              <strong>Local detection</strong>
+              <span>96 × 96 · lower-right anchor</span>
+            </div>
+            <svg class="watermark-star" viewBox="0 0 100 100" aria-hidden="true">
+              <path d="M50 4C54 27 61 39 78 50C61 61 54 73 50 96C46 73 39 61 22 50C39 39 46 27 50 4Z" fill="rgba(255,255,255,.78)" stroke="rgba(255,255,255,.9)" stroke-width="2" />
+              <path d="M50 18C53 34 59 43 70 50C59 57 53 66 50 82C47 66 41 57 30 50C41 43 47 34 50 18Z" fill="rgba(37,99,235,.12)" />
+            </svg>
+          </div>
+          <div class="detection-list">
+            <div class="detection-row"><span class="detection-label">Detected candidate</span><span class="detection-value">Gemini visible mark</span></div>
+            <div class="detection-row"><span class="detection-label">Position</span><span class="detection-value">Bottom-right · 64px margin</span></div>
+            <div class="detection-row"><span class="detection-label">Processing mode</span><span class="detection-value"><span class="success-pill">Local</span></span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="features" class="section">
+      <div class="container">
+        <div class="section-head">
+          <div class="eyebrow eyebrow-center">Clean workflows for supported AI media</div>
+          <h2>Purpose-built for visible Gemini watermarks — not a generic magic eraser.</h2>
+          <p>MBLabs combines known Gemini geometry, alpha inversion, and local cleanup models. It is deliberately scoped, predictable, and inspectable.</p>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card">
+            <div class="icon-tile"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.1 7.1 2.4-7.1 2.4L12 21l-2.4-7.1-7.1-2.4 7.1-2.4L12 2z"/></svg></div>
+            <h3>Known geometry first</h3>
+            <p>Detection starts from validated Gemini/Veo output catalogs and local anchor refinement instead of guessing a model outline.</p>
+          </article>
+          <article class="feature-card">
+            <div class="icon-tile"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 16 0"/><path d="M8 12a4 4 0 0 1 8 0"/><path d="M12 12v8"/></svg></div>
+            <h3>Inverse alpha, not hallucination</h3>
+            <p>Supported marks are removed by reversing the compositing equation. Content is not invented or “filled in” by a remote model.</p>
+          </article>
+          <article class="feature-card">
+            <div class="icon-tile"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+            <h3>Local by design</h3>
+            <p>Processing happens on your computer through the browser, CLI, or packaged tool. Media is not uploaded to a hosted processor.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section alt">
+      <div class="container">
+        <div class="section-head">
+          <div class="eyebrow eyebrow-center">Three simple steps</div>
+          <h2>Drop it in. Verify the detection. Export.</h2>
+          <p>No account setup, no remote queue, no guessing at what happened to your media.</p>
+        </div>
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><h3>Choose a file</h3><p>Pick a supported image or video locally in the browser.</p></div>
+          <div class="step"><div class="step-num">2</div><h3>Detect the mark</h3><p>The app locates the watermark candidate using local catalog and frame analysis.</p></div>
+          <div class="step"><div class="step-num">3</div><h3>Review before export</h3><p>Inspect the comparison, detection summary, and output settings.</p></div>
+          <div class="step"><div class="step-num">4</div><h3>Export locally</h3><p>Download a cleaned file while keeping every intermediate operation on your machine.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="privacy-band">
+          <div>
+            <h2>Your media stays yours.</h2>
+            <p>Use the local tool for supported Gemini/Veo visible watermarks. It is scoped, transparent, and designed for private workflows.</p>
+          </div>
+          <a class="btn btn-primary" href="video-preview.html">Launch the tool<span aria-hidden="true">→</span></a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <div class="footer-brand">MBLabs Watermark Remover</div>
+          <p class="small" style="margin:8px 0 0;color:#94a3b8">Private, local cleanup for supported Gemini/Veo visible watermarks.</p>
+        </div>
+        <nav class="footer-links" aria-label="Local tools">
+          <a href="dev-preview.html">Image tool</a>
+          <a href="video-preview.html">Video tool</a>
+          <a href="userscript/gemini-watermark-remover.user.js">Userscript</a>
+        </nav>
+      </div>
+      <div class="footer-bottom"><span>MBLabs Watermark Remover</span><span>Use only on media you have rights to process.</span></div>
+    </div>
+  </footer>
+</body>
+</html>

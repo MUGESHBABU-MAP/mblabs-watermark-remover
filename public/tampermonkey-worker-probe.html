@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#2563eb" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'; worker-src 'self'" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>MBLabs Worker Probe — Tampermonkey Diagnostics</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232563eb'/%3E%3Cpath d='M8 20L13 10L16 17L20 6L24 20' stroke='white' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="mblabs.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav">
+      <a class="brand" href="index.html" aria-label="MBLabs Watermark Remover home">
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 17L8.5 7L12 14L15.5 4L20 17"/></svg></span>
+        <span class="brand-name">MBLabs <span>Watermark Remover</span></span>
+      </a>
+      <nav class="nav-links" aria-label="Diagnostics">
+        <a href="index.html">Overview</a>
+        <a href="dev-preview.html">Image tool</a>
+        <a href="video-preview.html">Video tool</a>
+      </nav>
+      <div class="nav-actions"><a class="btn btn-primary btn-small" href="/tampermonkey-worker-probe.user.js">Install probe</a></div>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <div class="container">
+      <div class="tool-hero">
+        <div>
+          <div class="eyebrow"><span class="eyebrow-dot"></span> Diagnostics</div>
+          <h1>Tampermonkey DOM sandbox worker probe.</h1>
+          <p>This internal diagnostic page simulates Gemini-style <code>worker-src 'self'</code> restrictions and verifies local userscript bridging without relying on external services.</p>
+        </div>
+        <div class="tool-badges"><span class="badge">Admin only</span><span class="badge">Local CSP diagnostic</span></div>
+      </div>
+
+      <section class="panel" aria-label="Probe status">
+        <div class="panel-head"><span>Probe results</span><a class="btn btn-secondary btn-small" href="/tampermonkey-worker-probe.user.js">Install / update probe</a></div>
+        <div class="panel-body">
+          <div class="probe-grid">
+            <div class="probe-card"><span class="probe-label">Page Blob Worker</span><div class="probe-value" id="page-worker-status">Waiting</div></div>
+            <div class="probe-card"><span class="probe-label">Userscript Sandbox Worker</span><div class="probe-value" id="sandbox-worker-status">Waiting</div></div>
+            <div class="probe-card"><span class="probe-label">Bridge Roundtrip</span><div class="probe-value" id="bridge-status">Waiting</div></div>
+            <div class="probe-card"><span class="probe-label">Overall</span><div class="probe-value" id="overall-status">Starting</div></div>
+          </div>
+          <pre id="report" class="probe-report">Waiting for diagnostic events…</pre>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer"><div class="container"><div class="footer-grid"><div><div class="footer-brand">MBLabs Watermark Remover</div><p class="small" style="margin:8px 0 0;color:#94a3b8">Internal Tampermonkey worker diagnostics.</p></div><a class="footer-links" href="index.html">Back to local overview</a></div></div></footer>
+
+  <script>
+    (() => {
+      const state = {
+        startedAt: new Date().toISOString(),
+        completed: false,
+        userscriptDetected: false,
+        pageDirectBlobWorker: null,
+        userscriptSandboxWorker: null,
+        bridgeRoundtrip: null,
+        errors: []
+      };
+
+      let handshakeTimer = 0;
+      let bridgeTimer = 0;
+      let bridgeRequested = false;
+
+      const reportNode = document.querySelector('#report');
+      const pageWorkerNode = document.querySelector('#page-worker-status');
+      const sandboxWorkerNode = document.querySelector('#sandbox-worker-status');
+      const bridgeNode = document.querySelector('#bridge-status');
+      const overallNode = document.querySelector('#overall-status');
+
+      window.__gwrTampermonkeyProbeState = state;
+
+      const render = () => {
+        pageWorkerNode.textContent = formatStatus(state.pageDirectBlobWorker);
+        sandboxWorkerNode.textContent = formatStatus(state.userscriptSandboxWorker);
+        bridgeNode.textContent = formatStatus(state.bridgeRoundtrip);
+        overallNode.textContent = state.completed
+          ? (state.bridgeRoundtrip?.ok ? 'Complete' : 'Failed')
+          : (state.userscriptDetected ? 'Testing bridge' : 'Waiting for Userscript');
+        reportNode.textContent = JSON.stringify(state, null, 2);
+        document.documentElement.dataset.gwrTmProbeStatus = state.completed ? 'complete' : 'running';
+      };
+
+      const formatStatus = (value) => {
+        if (!value) return 'Waiting';
+        if (value.ok === true) return value.summary || 'OK';
+        if (value.ok === false) return value.summary || value.message || 'Failed';
+        return JSON.stringify(value);
+      };
+
+      const complete = () => {
+        if (state.completed) return;
+        state.completed = true;
+        state.completedAt = new Date().toISOString();
+        clearInterval(handshakeTimer);
+        clearTimeout(bridgeTimer);
+        render();
+      };
+
+      const requestHandshake = () => {
+        window.postMessage({ type: 'gwr:tm-probe-handshake' }, '*');
+      };
+
+      const requestBridge = () => {
+        if (bridgeRequested || !state.userscriptDetected) return;
+        bridgeRequested = true;
+        clearTimeout(bridgeTimer);
+        bridgeTimer = window.setTimeout(() => {
+          if (!state.bridgeRoundtrip) {
+            state.bridgeRoundtrip = {
+              ok: false,
+              summary: 'Bridge timeout',
+              error: 'Timed out waiting for gwr:tm-bridge-response'
+            };
+            complete();
+          }
+        }, 5000);
+        window.postMessage({ type: 'gwr:tm-bridge-request', payload: { text: 'ping-from-page', sentAt: Date.now() } }, '*');
+      };
+
+      const probePageBlobWorker = async () => {
+        let worker = null;
+        let workerUrl = '';
+        try {
+          workerUrl = URL.createObjectURL(new Blob([
+            'self.onmessage = () => self.postMessage({ ok: true, from: "page-worker" });'
+          ], { type: 'text/javascript' }));
+          worker = new Worker(workerUrl);
+          const response = await new Promise((resolve, reject) => {
+            const timeoutId = window.setTimeout(() => reject(new Error('Page worker timed out')), 1500);
+            worker.addEventListener('message', (event) => {
+              window.clearTimeout(timeoutId);
+              resolve(event.data);
+            }, { once: true });
+            worker.addEventListener('error', (event) => {
+              window.clearTimeout(timeoutId);
+              reject(event.error || new Error(event.message || 'Page worker crashed'));
+            }, { once: true });
+            worker.postMessage({ ping: true });
+          });
+          state.pageDirectBlobWorker = { ok: true, summary: 'Unexpectedly succeeded', response };
+        } catch (error) {
+          state.pageDirectBlobWorker = {
+            ok: false,
+            summary: error?.name || 'Expected failure',
+            message: error?.message || String(error)
+          };
+        } finally {
+          if (worker) worker.terminate();
+          if (workerUrl) URL.revokeObjectURL(workerUrl);
+        }
+      };
+
+      window.addEventListener('message', (event) => {
+        if (event.source !== window) return;
+        const payload = event.data || {};
+        if (payload.type === 'gwr:tm-probe-ready') {
+          state.userscriptDetected = true;
+          state.userscriptSandboxWorker = payload.payload || {
+            ok: false,
+            summary: 'Userscript ready payload missing',
+            message: 'No payload received'
+          };
+          requestBridge();
+          render();
+          return;
+        }
+        if (payload.type === 'gwr:tm-bridge-response') {
+          state.bridgeRoundtrip = payload;
+          complete();
+        }
+      });
+
+      window.addEventListener('load', async () => {
+        await probePageBlobWorker();
+        render();
+        requestHandshake();
+        handshakeTimer = window.setInterval(requestHandshake, 700);
+        window.setTimeout(() => {
+          if (!state.userscriptDetected) {
+            state.errors.push('Tampermonkey probe userscript not detected');
+            complete();
+          }
+        }, 5000);
+      }, { once: true });
+    })();
+  </script>
+</body>
+</html>
